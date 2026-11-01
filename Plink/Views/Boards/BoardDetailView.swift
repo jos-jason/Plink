@@ -11,7 +11,7 @@ struct BoardDetailView: View {
                     Button {
                         showingRename = true
                     } label: {
-                        Label("Rename Board", systemImage: "pencil")
+                        Label("Edit Board", systemImage: "pencil")
                     }
                 }
             }

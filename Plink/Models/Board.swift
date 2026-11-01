@@ -9,18 +9,23 @@ final class Board {
     var dateModified: Date
     var sortOrder: Int
 
+    /// SF Symbol name for the board icon
+    var icon: String = "folder"
+
     @Relationship(inverse: \Pin.boards)
     var pins: [Pin]
 
     init(
         name: String,
-        sortOrder: Int = 0
+        sortOrder: Int = 0,
+        icon: String = "folder"
     ) {
         self.id = UUID()
         self.name = name
         self.dateCreated = Date()
         self.dateModified = Date()
         self.sortOrder = sortOrder
+        self.icon = icon
         self.pins = []
     }
 

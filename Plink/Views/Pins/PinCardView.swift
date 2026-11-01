@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct PinCardView: View {
     @Bindable var pin: Pin
@@ -15,6 +20,16 @@ struct PinCardView: View {
                     )
                     .frame(maxWidth: .infinity)
                     .clipped()
+            } else if let faviconPath = pin.faviconPath {
+                // No main image, but we have a favicon
+                Rectangle()
+                    .fill(.quaternary)
+                    .aspectRatio(1.5, contentMode: .fit)
+                    .overlay {
+                        AsyncCachedImage(filename: faviconPath, contentMode: .fit)
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
             } else if !pin.metadataFetched {
                 // Loading placeholder
                 Rectangle()
@@ -46,7 +61,7 @@ struct PinCardView: View {
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
-        .task {
+        .task(id: pin.metadataFetched) {
             guard !pin.metadataFetched else { return }
             await fetchMetadata()
         }
@@ -77,6 +92,26 @@ struct PinCardView: View {
                 )
                 pin.imagePath = filename
                 pin.imageAspectRatio = ImageStorageService.aspectRatio(from: imageData)
+            }
+
+            // Save favicon when available (used as fallback when no main image exists)
+            if let faviconData = metadata.faviconData, !faviconData.isEmpty, pin.faviconPath == nil {
+                // Verify the data is a valid image before saving
+                #if canImport(UIKit)
+                let isValidImage = UIImage(data: faviconData) != nil
+                #else
+                let isValidImage = NSImage(data: faviconData) != nil
+                #endif
+                if isValidImage {
+                    let faviconFilename = "\(pin.id.uuidString)-favicon.png"
+                    let faviconURL = ImageStorageService.imageURL(for: faviconFilename)
+                    try? FileManager.default.createDirectory(
+                        at: faviconURL.deletingLastPathComponent(),
+                        withIntermediateDirectories: true
+                    )
+                    try? faviconData.write(to: faviconURL)
+                    pin.faviconPath = faviconFilename
+                }
             }
 
             pin.metadataFetched = true

@@ -14,6 +14,9 @@ final class Pin {
     /// Relative filename for the stored image within PinImages/
     var imagePath: String?
 
+    /// Relative filename for the stored favicon within PinImages/
+    var faviconPath: String?
+
     /// Whether the user manually chose/uploaded this image
     var isCustomImage: Bool
 
@@ -28,6 +31,9 @@ final class Pin {
     /// Aspect ratio of the stored image (width / height), used for layout sizing
     var imageAspectRatio: Double
 
+    /// User-defined sort order within a view
+    var sortOrder: Int
+
     init(
         urlString: String,
         title: String = "",
@@ -38,7 +44,8 @@ final class Pin {
         metadataFetched: Bool = false,
         boards: [Board] = [],
         notes: String = "",
-        imageAspectRatio: Double = 1.5
+        imageAspectRatio: Double = 1.5,
+        sortOrder: Int = 0
     ) {
         self.id = UUID()
         self.urlString = urlString
@@ -53,6 +60,7 @@ final class Pin {
         self.boards = boards
         self.notes = notes
         self.imageAspectRatio = imageAspectRatio
+        self.sortOrder = sortOrder
     }
 
     var url: URL? {

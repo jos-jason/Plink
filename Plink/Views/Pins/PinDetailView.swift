@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 
 struct PinDetailView: View {
@@ -19,6 +20,14 @@ struct PinDetailView: View {
                         .aspectRatio(pin.imageAspectRatio, contentMode: .fit)
                         .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+                } else if let faviconPath = pin.faviconPath {
+                    HStack {
+                        Spacer()
+                        AsyncCachedImage(filename: faviconPath, contentMode: .fit)
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        Spacer()
+                    }
                 }
 
                 // Title and domain
@@ -90,7 +99,7 @@ struct PinDetailView: View {
                     } else {
                         ForEach(pin.boards) { board in
                             HStack {
-                                Label(board.name, systemImage: "folder")
+                                Label(board.name, systemImage: board.icon)
                                 Spacer()
                                 Button {
                                     pin.boards.removeAll { $0.id == board.id }
@@ -137,6 +146,18 @@ struct PinDetailView: View {
 
                     // Refresh metadata
                     Button {
+                        // Clear non-custom image so favicon can be fetched fresh
+                        if !pin.isCustomImage {
+                            if let imagePath = pin.imagePath {
+                                ImageStorageService.deleteImage(filename: imagePath)
+                            }
+                            pin.imagePath = nil
+                            pin.imageAspectRatio = 1.5
+                        }
+                        if let faviconPath = pin.faviconPath {
+                            ImageStorageService.deleteImage(filename: faviconPath)
+                        }
+                        pin.faviconPath = nil
                         pin.metadataFetched = false
                     } label: {
                         Label("Refresh Metadata", systemImage: "arrow.clockwise")
@@ -236,7 +257,7 @@ struct BoardPickerView: View {
                             }
                         } label: {
                             HStack {
-                                Label(board.name, systemImage: "folder")
+                                Label(board.name, systemImage: board.icon)
                                 Spacer()
                                 if isInBoard {
                                     Image(systemName: "checkmark")

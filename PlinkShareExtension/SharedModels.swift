@@ -20,6 +20,7 @@ final class Pin {
     var boards: [Board]
     var notes: String
     var imageAspectRatio: Double
+    var sortOrder: Int
 
     init(
         urlString: String,
@@ -31,7 +32,8 @@ final class Pin {
         metadataFetched: Bool = false,
         boards: [Board] = [],
         notes: String = "",
-        imageAspectRatio: Double = 1.5
+        imageAspectRatio: Double = 1.5,
+        sortOrder: Int = 0
     ) {
         self.id = UUID()
         self.urlString = urlString
@@ -46,6 +48,7 @@ final class Pin {
         self.boards = boards
         self.notes = notes
         self.imageAspectRatio = imageAspectRatio
+        self.sortOrder = sortOrder
     }
 }
 
@@ -57,18 +60,23 @@ final class Board {
     var dateModified: Date
     var sortOrder: Int
 
+    /// SF Symbol name for the board icon
+    var icon: String = "folder"
+
     @Relationship(inverse: \Pin.boards)
     var pins: [Pin]
 
     init(
         name: String,
-        sortOrder: Int = 0
+        sortOrder: Int = 0,
+        icon: String = "folder"
     ) {
         self.id = UUID()
         self.name = name
         self.dateCreated = Date()
         self.dateModified = Date()
         self.sortOrder = sortOrder
+        self.icon = icon
         self.pins = []
     }
 }
