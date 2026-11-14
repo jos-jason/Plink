@@ -7,6 +7,7 @@ import '../../data/library_store.dart';
 import '../../models/board.dart';
 import '../../models/pin.dart';
 import '../boards/board_picker_dialog.dart';
+import '../settings/sync_page.dart';
 import '../widgets/common.dart';
 import 'add_pin_sheet.dart';
 import 'pin_card.dart';
@@ -71,6 +72,7 @@ class _PinGridPageState extends State<PinGridPage> {
               icon: Icon(_reordering ? Icons.check : Icons.swap_vert),
               onPressed: () => setState(() => _reordering = !_reordering),
             ),
+          if (board == null) const SyncButton(),
           IconButton(
             tooltip: 'Add Pin',
             icon: const Icon(Icons.add),

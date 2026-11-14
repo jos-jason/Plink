@@ -43,6 +43,20 @@ class ImageStorage {
     return filename;
   }
 
+  /// Writes bytes that are already processed (e.g. from another device).
+  Future<String> writeFile(Uint8List data, String pinId, String suffix) async {
+    await directory.create(recursive: true);
+    final filename = '$pinId-$suffix-${DateTime.now().millisecondsSinceEpoch}';
+    await fileFor(filename).writeAsBytes(data, flush: true);
+    return filename;
+  }
+
+  Future<Uint8List?> read(String? filename) async {
+    if (filename == null) return null;
+    final file = fileFor(filename);
+    return await file.exists() ? file.readAsBytes() : null;
+  }
+
   Future<void> delete(String? filename) async {
     if (filename == null) return;
     final file = fileFor(filename);

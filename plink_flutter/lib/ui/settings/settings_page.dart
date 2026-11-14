@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/library_store.dart';
+import '../../sync/plink_sync.dart';
 import '../widgets/common.dart';
+import 'sync_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -124,6 +126,21 @@ class SettingsPage extends StatelessWidget {
               ListTile(
                 title: const Text('Boards'),
                 trailing: Text('${store.boards.length}'),
+              ),
+              header('Sync'),
+              Builder(
+                builder: (context) {
+                  final sync = context.watch<PlinkSync>();
+                  return ListTile(
+                    leading: const Icon(Icons.cloud_sync_outlined),
+                    title: const Text('Sync with your server'),
+                    subtitle: Text(
+                      sync.signedIn ? 'Signed in as ${sync.email}' : 'Off',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => openSyncPage(context),
+                  );
+                },
               ),
               header('Backup'),
               ListTile(

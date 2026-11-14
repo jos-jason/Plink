@@ -12,6 +12,14 @@ import '../services/backup_service.dart';
 import '../services/image_storage.dart';
 import '../services/metadata_service.dart';
 
+/// A local edit to one pin or board, reported so sync can send it.
+typedef LibraryChange = ({
+  String kind,
+  String id,
+  bool deleted,
+  DateTime modified,
+});
+
 /// The whole library, held in memory and persisted as one JSON file.
 ///
 /// A single file keeps the port dependency-free on every platform; it's fine
@@ -27,6 +35,31 @@ class LibraryStore extends ChangeNotifier {
   final List<Board> _boards = [];
   final Set<String> _fetching = {};
   Timer? _saveTimer;
+
+  static const pinKind = 'pin';
+  static const boardKind = 'board';
+
+  /// Told about every local change. Versions from other devices (the
+  /// `putRemote`/`removeRemote` methods) aren't reported, so they aren't
+  /// sent back.
+  void Function(LibraryChange change)? onLocalChange;
+
+  void _report(
+    String kind,
+    String id,
+    DateTime modified, {
+    bool deleted = false,
+  }) => onLocalChange?.call((
+    kind: kind,
+    id: id,
+    deleted: deleted,
+    modified: modified,
+  ));
+
+  void _pinChanged(Pin pin) => _report(pinKind, pin.id, pin.dateModified);
+
+  void _boardChanged(Board board) =>
+      _report(boardKind, board.id, board.dateModified);
 
   static Future<LibraryStore> open(
     String supportDirectory, {
@@ -78,16 +111,19 @@ class LibraryStore extends ChangeNotifier {
   void addPin(Pin pin) {
     _pins.add(pin);
     _changed();
+    _pinChanged(pin);
   }
 
   void updatePin(Pin pin) {
     pin.dateModified = DateTime.now();
     _changed();
+    _pinChanged(pin);
   }
 
   Future<void> deletePin(Pin pin) async {
     _pins.removeWhere((p) => p.id == pin.id);
     _changed();
+    _report(pinKind, pin.id, DateTime.now(), deleted: true);
     await images.delete(pin.imagePath);
     await images.delete(pin.faviconPath);
   }
@@ -102,10 +138,17 @@ class LibraryStore extends ChangeNotifier {
     final ordered = pinsIn(board);
     final moved = ordered.removeAt(oldIndex);
     ordered.insert(newIndex, moved);
+    final now = DateTime.now();
+    final movedPins = <Pin>[];
     for (var i = 0; i < ordered.length; i++) {
-      ordered[i].sortOrder = i;
+      if (ordered[i].sortOrder == i) continue;
+      ordered[i]
+        ..sortOrder = i
+        ..dateModified = now;
+      movedPins.add(ordered[i]);
     }
     _changed();
+    movedPins.forEach(_pinChanged);
   }
 
   /// Saves a new main image for [pin] from raw bytes.
@@ -180,29 +223,88 @@ class LibraryStore extends ChangeNotifier {
     final board = Board(name: name, icon: icon, sortOrder: nextOrder);
     _boards.add(board);
     _changed();
+    _boardChanged(board);
     return board;
   }
 
   void updateBoard(Board board) {
     board.dateModified = DateTime.now();
     _changed();
+    _boardChanged(board);
   }
 
   /// Deletes the board; its pins stay in the library.
   void deleteBoard(Board board) {
     _boards.removeWhere((b) => b.id == board.id);
-    for (final pin in _pins) {
-      pin.boardIds.remove(board.id);
-    }
+    final now = DateTime.now();
+    final affected = [
+      for (final pin in _pins)
+        if (pin.boardIds.remove(board.id)) pin..dateModified = now,
+    ];
     _changed();
+    _report(boardKind, board.id, now, deleted: true);
+    affected.forEach(_pinChanged);
   }
 
   void reorderBoards(int oldIndex, int newIndex) {
     final ordered = boards.toList();
     final moved = ordered.removeAt(oldIndex);
     ordered.insert(newIndex, moved);
+    final now = DateTime.now();
+    final changed = <Board>[];
     for (var i = 0; i < ordered.length; i++) {
-      ordered[i].sortOrder = i;
+      if (ordered[i].sortOrder == i) continue;
+      ordered[i]
+        ..sortOrder = i
+        ..dateModified = now;
+      changed.add(ordered[i]);
+    }
+    _changed();
+    changed.forEach(_boardChanged);
+  }
+
+  // MARK: Versions from other devices (not reported to onLocalChange)
+
+  /// Adds or replaces a pin, deleting image files the old version used.
+  Future<void> putRemotePin(Pin pin) async {
+    final index = _pins.indexWhere((p) => p.id == pin.id);
+    final old = index < 0 ? null : _pins[index];
+    if (old == null) {
+      _pins.add(pin);
+    } else {
+      _pins[index] = pin;
+    }
+    _changed();
+    if (old != null) {
+      if (old.imagePath != pin.imagePath) await images.delete(old.imagePath);
+      if (old.faviconPath != pin.faviconPath) {
+        await images.delete(old.faviconPath);
+      }
+    }
+  }
+
+  Future<void> removeRemotePin(String id) async {
+    final pin = pinById(id);
+    if (pin == null) return;
+    _pins.remove(pin);
+    _changed();
+    await images.delete(pin.imagePath);
+    await images.delete(pin.faviconPath);
+  }
+
+  void putRemoteBoard(Board board) {
+    _boards
+      ..removeWhere((b) => b.id == board.id)
+      ..add(board);
+    _changed();
+  }
+
+  /// Removes a board deleted elsewhere. Its pins' memberships are dropped
+  /// here too; the other device sends those pins as well.
+  void removeRemoteBoard(String id) {
+    _boards.removeWhere((b) => b.id == id);
+    for (final pin in _pins) {
+      pin.boardIds.remove(id);
     }
     _changed();
   }
@@ -217,13 +319,17 @@ class LibraryStore extends ChangeNotifier {
     final data = BackupService.importJson(json);
     final boardIds = _boards.map((b) => b.id).toSet();
     final pinIds = _pins.map((p) => p.id).toSet();
-    _boards.addAll(data.boards.where((b) => boardIds.add(b.id)));
+    final knownBoards = {...boardIds, ...data.boards.map((b) => b.id)};
     final newPins = data.pins.where((p) => pinIds.add(p.id)).toList();
     for (final pin in newPins) {
-      pin.boardIds.removeWhere((id) => !boardIds.contains(id));
+      pin.boardIds.removeWhere((id) => !knownBoards.contains(id));
     }
+    final newBoards = data.boards.where((b) => boardIds.add(b.id)).toList();
+    _boards.addAll(newBoards);
     _pins.addAll(newPins);
     _changed();
+    newBoards.forEach(_boardChanged);
+    newPins.forEach(_pinChanged);
     return newPins.length;
   }
 
