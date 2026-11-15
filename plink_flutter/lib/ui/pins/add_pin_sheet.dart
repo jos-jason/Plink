@@ -9,6 +9,7 @@ import '../../data/library_store.dart';
 import '../../models/board.dart';
 import '../../models/pin.dart';
 import '../../services/metadata_service.dart';
+import '../widgets/board_glyph.dart';
 
 class AddPinSheet extends StatefulWidget {
   const AddPinSheet({super.key, this.board});
@@ -254,7 +255,7 @@ class _AddPinSheetState extends State<AddPinSheet> {
             Text('Board', style: theme.textTheme.labelLarge),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(widget.board!.iconData),
+              leading: BoardGlyph(widget.board!.boardIcon),
               title: Text(widget.board!.name),
             ),
           ],

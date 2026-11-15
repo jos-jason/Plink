@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../constants.dart';
 import '../data/library_store.dart';
+import '../models/board_icons.dart';
 import '../theme.dart';
 import 'boards/board_editor_dialog.dart';
 import 'boards/board_grid_page.dart';
 import 'pins/pin_grid_page.dart';
 import 'settings/settings_page.dart';
+import 'widgets/board_glyph.dart';
 
 /// Bottom tabs on narrow screens (phones), sidebar on wide ones (tablets,
 /// desktop) — the same split the Swift app makes on size class.
@@ -152,7 +154,7 @@ class _SidebarShellState extends State<_SidebarShell> {
                     ),
                     for (final board in store.boards)
                       _SidebarTile(
-                        icon: board.iconData,
+                        icon: board.boardIcon,
                         label: board.name,
                         selected: isBoard(board.id),
                         onTap: () =>
@@ -219,7 +221,8 @@ class _SidebarTile extends StatelessWidget {
     this.menu,
   });
 
-  final IconData icon;
+  /// An [IconData] or a [BoardIcon].
+  final Object icon;
   final String label;
   final VoidCallback onTap;
   final bool selected;
@@ -236,8 +239,12 @@ class _SidebarTile extends StatelessWidget {
       child: ListTile(
         dense: true,
         visualDensity: VisualDensity.compact,
-        leading: Icon(
-          icon,
+        leading: BoardGlyph(
+          switch (icon) {
+            final BoardIcon b => b,
+            final IconData d => BoardIcon('', '', d, const []),
+            _ => boardIconCatalog.first,
+          },
           color: selected ? Colors.white : plinkAccent,
           size: 20,
         ),

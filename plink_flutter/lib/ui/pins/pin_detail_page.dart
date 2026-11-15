@@ -9,6 +9,7 @@ import '../../data/library_store.dart';
 import '../../models/pin.dart';
 import '../boards/board_picker_dialog.dart';
 import '../widgets/common.dart';
+import '../widgets/board_glyph.dart';
 
 class PinDetailPage extends StatefulWidget {
   const PinDetailPage({super.key, required this.pinId});
@@ -248,7 +249,7 @@ class _PinDetailPageState extends State<PinDetailPage> {
                   children: [
                     for (final board in boards)
                       InputChip(
-                        avatar: Icon(board.iconData, size: 18),
+                        avatar: BoardGlyph(board.boardIcon, size: 18),
                         label: Text(board.name),
                         onDeleted: () => store.setBoards(
                           pin,

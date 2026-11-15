@@ -52,6 +52,8 @@ dependencies:
       url: https://github.com/jos-jason/nas-sync.git
       path: dart/nas_sync
       ref: 5ce438e
+  phosphor_flutter: ^2.1.0
+  flutter_svg: ^2.4.0
 
 dev_dependencies:
   flutter_test:

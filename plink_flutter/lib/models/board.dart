@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+
+import 'board_icons.dart';
 
 class Board {
   Board({
@@ -19,11 +20,18 @@ class Board {
   DateTime dateModified;
   int sortOrder;
 
-  /// Icon key. Uses the Swift app's SF Symbol names so values round-trip;
-  /// see [boardIcons] for the Material equivalents.
+  /// Icon key: an SF Symbol name, so values mean the same in the Swift app.
+  /// See [boardIconCatalog] for what each key draws here.
   String icon;
 
-  IconData get iconData => boardIcons[icon] ?? Icons.folder_outlined;
+  /// The icon to draw. A board left on the default folder gets the icon
+  /// its name suggests ("Recipes" shows a fork and knife), without
+  /// changing what's stored.
+  BoardIcon get boardIcon {
+    final chosen = boardIconForKey(icon);
+    if (chosen != null && chosen.key != 'folder') return chosen;
+    return suggestBoardIcon(name) ?? boardIconCatalog.first;
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -43,42 +51,3 @@ class Board {
     icon: json['icon'] as String? ?? 'folder',
   );
 }
-
-/// SF Symbol name → Material icon, covering the Swift app's default icon set.
-const Map<String, IconData> boardIcons = {
-  'folder': Icons.folder_outlined,
-  'star': Icons.star_outline,
-  'heart': Icons.favorite_outline,
-  'book': Icons.menu_book_outlined,
-  'camera': Icons.photo_camera_outlined,
-  'music.note': Icons.music_note_outlined,
-  'cart': Icons.shopping_cart_outlined,
-  'briefcase': Icons.work_outline,
-  'house': Icons.home_outlined,
-  'gamecontroller': Icons.sports_esports_outlined,
-  'airplane': Icons.flight_outlined,
-  'leaf': Icons.eco_outlined,
-  'paintbrush': Icons.brush_outlined,
-  'film': Icons.movie_outlined,
-  'globe': Icons.public,
-  'lightbulb': Icons.lightbulb_outline,
-  'hammer': Icons.handyman_outlined,
-  'wrench': Icons.build_outlined,
-  'fork.knife': Icons.restaurant_outlined,
-  'cup.and.saucer': Icons.local_cafe_outlined,
-  'tshirt': Icons.checkroom_outlined,
-  'shoe': Icons.directions_walk,
-  'figure.run': Icons.directions_run,
-  'bicycle': Icons.pedal_bike_outlined,
-  'car': Icons.directions_car_outlined,
-  'graduationcap': Icons.school_outlined,
-  'theatermasks': Icons.theater_comedy_outlined,
-  'trophy': Icons.emoji_events_outlined,
-  'gift': Icons.card_giftcard_outlined,
-  'bookmark': Icons.bookmark_outline,
-  'flag': Icons.flag_outlined,
-  'mappin': Icons.place_outlined,
-  'tag': Icons.sell_outlined,
-  'bell': Icons.notifications_outlined,
-  'sparkles': Icons.auto_awesome_outlined,
-};

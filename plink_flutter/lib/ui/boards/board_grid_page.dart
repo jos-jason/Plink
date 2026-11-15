@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants.dart';
@@ -8,9 +7,10 @@ import '../../models/board.dart';
 import '../../theme.dart';
 import '../pins/pin_grid_page.dart';
 import '../widgets/common.dart';
+import '../widgets/board_glyph.dart';
 import 'board_editor_dialog.dart';
 
-/// Boards tab on phones: a masonry grid of board covers.
+/// Boards tab on phones: a grid of board icon tiles.
 class BoardGridPage extends StatelessWidget {
   const BoardGridPage({super.key});
 
@@ -40,18 +40,17 @@ class BoardGridPage extends StatelessWidget {
             ),
           )
         else
-          SliverLayoutBuilder(
-            builder: (context, constraints) => SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              sliver: SliverMasonryGrid.count(
-                crossAxisCount: AppConstants.columnsForWidth(
-                  constraints.crossAxisExtent,
-                ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            sliver: SliverGrid.builder(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 100,
                 mainAxisSpacing: AppConstants.cardSpacing,
                 crossAxisSpacing: AppConstants.cardSpacing,
-                childCount: boards.length,
-                itemBuilder: (context, i) => _BoardCard(board: boards[i]),
+                childAspectRatio: 0.8,
               ),
+              itemCount: boards.length,
+              itemBuilder: (context, i) => _BoardTile(board: boards[i]),
             ),
           ),
       ],
@@ -59,24 +58,23 @@ class BoardGridPage extends StatelessWidget {
   }
 }
 
-class _BoardCard extends StatelessWidget {
-  const _BoardCard({required this.board});
+/// A board as an icon tile, like the iOS share sheet's board picker.
+class _BoardTile extends StatelessWidget {
+  const _BoardTile({required this.board});
 
   final Board board;
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LibraryStore>();
     final theme = Theme.of(context);
     final p = PlinkPalette.of(context);
-    final cover = store.coverPinFor(board);
-    final count = store.pinsIn(board).length;
+    final radius = BorderRadius.circular(16);
 
     return ContextMenuRegion(
       itemsBuilder: (_) => [
         PopupMenuItem(
           onTap: () => showBoardEditor(context, board: board),
-          child: const Text('Rename'),
+          child: const Text('Edit Board'),
         ),
         PopupMenuItem(
           onTap: () => confirmDeleteBoard(context, board),
@@ -86,48 +84,59 @@ class _BoardCard extends StatelessWidget {
           ),
         ),
       ],
-      child: PlinkCard(
-        onTap: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => PinGridPage(board: board))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Cover height follows the cover pin's image, as on iOS.
-            AspectRatio(
-              aspectRatio: (cover?.imageAspectRatio ?? 1.3).clamp(0.4, 3.0),
-              child: cover != null
-                  ? StoredImage(cover.imagePath!)
-                  : ColoredBox(
-                      color: p.fill,
-                      child: Icon(
-                        board.iconData,
-                        size: 36,
-                        color: p.tertiaryLabel,
-                      ),
-                    ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    board.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall,
+      child: Material(
+        color: p.fill,
+        borderRadius: radius,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => PinGridPage(board: board))),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                BoardGlyph(board.boardIcon, size: 30, color: p.label),
+                const SizedBox(height: 8),
+                _TileLabel(
+                  board.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    height: 1.15,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$count ${count == 1 ? 'pin' : 'pins'}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Up to two centered lines. A single long word ("Backpacking") shrinks to
+/// fit on one line instead of breaking mid-word.
+class _TileLabel extends StatelessWidget {
+  const _TileLabel(this.text, {this.style});
+
+  final String text;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!text.trim().contains(' ')) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(text, maxLines: 1, style: style),
+      );
+    }
+    return Text(
+      text,
+      maxLines: 2,
+      textAlign: TextAlign.center,
+      overflow: TextOverflow.ellipsis,
+      style: style,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/library_store.dart';
 import '../../models/pin.dart';
+import '../widgets/board_glyph.dart';
 import 'board_editor_dialog.dart';
 
 Future<void> showBoardPicker(BuildContext context, Pin pin) => showDialog<void>(
@@ -32,7 +33,7 @@ class _BoardPicker extends StatelessWidget {
           children: [
             for (final board in boards)
               CheckboxListTile(
-                secondary: Icon(board.iconData),
+                secondary: BoardGlyph(board.boardIcon),
                 title: Text(board.name),
                 value: pin.boardIds.contains(board.id),
                 onChanged: (checked) {
