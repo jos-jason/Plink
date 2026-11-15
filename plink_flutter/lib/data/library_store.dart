@@ -94,14 +94,14 @@ class LibraryStore extends ChangeNotifier {
       _pins.where((p) => p.boardIds.contains(board.id)).toList()
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-  /// Cover image: the image from the most recently added pin that has one.
-  String? coverImageFor(Board board) {
+  /// Cover: the most recently added pin in the board that has an image.
+  Pin? coverPinFor(Board board) {
     final withImages =
         _pins
             .where((p) => p.boardIds.contains(board.id) && p.imagePath != null)
             .toList()
           ..sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
-    return withImages.firstOrNull?.imagePath;
+    return withImages.firstOrNull;
   }
 
   bool isFetching(Pin pin) => _fetching.contains(pin.id);

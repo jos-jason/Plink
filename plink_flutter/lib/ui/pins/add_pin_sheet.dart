@@ -148,23 +148,30 @@ class _AddPinSheetState extends State<AddPinSheet> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Link'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: 'Cancel',
+        centerTitle: true,
+        leadingWidth: 90,
+        leading: TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilledButton(
-              onPressed: canSave ? _save : null,
-              child: _saving
-                  ? const SizedBox.square(
-                      dimension: 16,
+            child: _saving
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox.square(
+                      dimension: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save'),
-            ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: canSave ? _save : null,
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants.dart';
 import '../../data/library_store.dart';
 import '../../models/pin.dart';
+import '../../theme.dart';
 import '../widgets/common.dart';
 
 class PinCard extends StatefulWidget {
@@ -42,7 +43,8 @@ class _PinCardState extends State<PinCard> {
   Widget build(BuildContext context) {
     final pin = widget.pin;
     final theme = Theme.of(context);
-    final placeholderColor = theme.colorScheme.surfaceContainerHighest;
+    final palette = PlinkPalette.of(context);
+    final placeholderColor = palette.fill;
 
     Widget? media;
     if (pin.imagePath != null) {
@@ -81,55 +83,45 @@ class _PinCardState extends State<PinCard> {
       );
     }
 
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.cardCornerRadius),
-      ),
-      child: InkWell(
-        onTap: widget.onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ?media,
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (pin.title.isNotEmpty)
-                    Text(
-                      pin.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                  if (pin.domain.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        pin.domain,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  if (pin.title.isEmpty && pin.domain.isEmpty)
-                    Text(
-                      pin.urlString,
-                      maxLines: 2,
+    return PlinkCard(
+      onTap: widget.onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ?media,
+          Padding(
+            padding: const EdgeInsets.all(AppConstants.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (pin.title.isNotEmpty)
+                  Text(
+                    pin.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                if (pin.domain.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      pin.domain,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall,
                     ),
-                ],
-              ),
+                  ),
+                if (pin.title.isEmpty && pin.domain.isEmpty)
+                  Text(
+                    pin.urlString,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

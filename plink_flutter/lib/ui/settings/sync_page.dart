@@ -3,6 +3,8 @@ import 'package:nas_sync/nas_sync.dart';
 import 'package:provider/provider.dart';
 
 import '../../sync/plink_sync.dart';
+import '../../theme.dart';
+import '../widgets/common.dart';
 
 /// App bar button showing sync status; opens [SyncPage].
 class SyncButton extends StatelessWidget {
@@ -94,12 +96,19 @@ class _SyncPageState extends State<SyncPage> {
   Widget build(BuildContext context) {
     final sync = context.watch<PlinkSync>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Sync')),
+      backgroundColor: PlinkPalette.of(context).groupedBackground,
+      appBar: AppBar(
+        title: const Text('Sync'),
+        backgroundColor: PlinkPalette.of(context).groupedBackground,
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.symmetric(
+              horizontal: sync.signedIn ? 0 : 16,
+              vertical: 16,
+            ),
             children: sync.signedIn
                 ? _status(context, sync)
                 : _form(context, sync),
@@ -176,41 +185,46 @@ class _SyncPageState extends State<SyncPage> {
         : TimeOfDay.fromDateTime(last).format(context);
     final state = switch (sync.status) {
       SyncStatus.syncing => 'Syncing…',
-      SyncStatus.offline => 'Offline. Pins are saved here and will sync when the server is reachable.',
-      SyncStatus.error => 'Problem: ${sync.message ?? 'unknown'}',
+      SyncStatus.offline => 'Offline',
+      SyncStatus.error => 'Problem',
       _ => 'Up to date',
     };
+    final note = switch (sync.status) {
+      SyncStatus.offline =>
+        'Pins are saved here and will sync when the server is reachable.',
+      SyncStatus.error => sync.message,
+      _ => sync.message,
+    };
     return [
-      ListTile(
-        leading: const Icon(Icons.person_outline),
-        title: Text(sync.email ?? ''),
-        subtitle: const Text('Signed in'),
+      GroupedSection(
+        header: 'Account',
+        children: [
+          GroupedRow(title: 'Signed in as', value: sync.email ?? ''),
+          GroupedRow(title: 'Server', subtitle: sync.url ?? ''),
+        ],
       ),
-      ListTile(
-        leading: const Icon(Icons.dns_outlined),
-        title: Text(sync.url ?? ''),
-        subtitle: const Text('Server'),
+      GroupedSection(
+        header: 'Status',
+        footer: note,
+        children: [
+          GroupedRow(title: 'Status', value: state),
+          GroupedRow(title: 'Last synced', value: when),
+          GroupedRow(
+            icon: Icons.sync,
+            title: 'Sync Now',
+            isButton: true,
+            onTap: sync.status == SyncStatus.syncing ? null : sync.syncNow,
+          ),
+        ],
       ),
-      ListTile(
-        leading: const Icon(Icons.schedule),
-        title: Text(state),
-        subtitle: Text('Last synced: $when'),
-      ),
-      if (sync.message != null && sync.status == SyncStatus.idle)
-        ListTile(
-          leading: const Icon(Icons.warning_amber_outlined),
-          title: Text(sync.message!),
-        ),
-      const SizedBox(height: 8),
-      FilledButton.icon(
-        onPressed: sync.status == SyncStatus.syncing ? null : sync.syncNow,
-        icon: const Icon(Icons.sync),
-        label: const Text('Sync now'),
-      ),
-      const SizedBox(height: 8),
-      OutlinedButton(
-        onPressed: sync.signOut,
-        child: const Text('Sign out on this device'),
+      GroupedSection(
+        children: [
+          GroupedRow(
+            title: 'Sign Out on This Device',
+            destructive: true,
+            onTap: sync.signOut,
+          ),
+        ],
       ),
     ];
   }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants.dart';
 import '../data/library_store.dart';
+import '../theme.dart';
 import 'boards/board_editor_dialog.dart';
 import 'boards/board_grid_page.dart';
 import 'pins/pin_grid_page.dart';
@@ -41,23 +42,27 @@ class _TabShellState extends State<_TabShell> {
         index: _index,
         children: const [PinGridPage(), BoardGridPage(), SettingsPage()],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.push_pin_outlined),
-            label: 'Pins',
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: PlinkPalette.of(context).separator,
+              width: 0.5,
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.folder_outlined),
-            label: 'Boards',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            label: 'Settings',
-          ),
-        ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.push_pin), label: 'Pins'),
+            NavigationDestination(icon: Icon(Icons.folder), label: 'Boards'),
+            NavigationDestination(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -117,33 +122,31 @@ class _SidebarShellState extends State<_SidebarShell> {
           SizedBox(
             width: 240,
             child: Material(
-              color: theme.colorScheme.surfaceContainerLow,
+              color: PlinkPalette.of(context).sidebar,
               child: SafeArea(
                 right: false,
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                       child: Text(
                         'Plink',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: theme.textTheme.headlineMedium,
                       ),
                     ),
                     _SidebarTile(
-                      icon: Icons.push_pin_outlined,
+                      icon: Icons.push_pin,
                       label: 'All Pins',
                       selected: _selected is _AllPins,
                       onTap: () => setState(() => _selected = const _AllPins()),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
                       child: Text(
                         'Boards',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -183,7 +186,7 @@ class _SidebarShellState extends State<_SidebarShell> {
                     ),
                     const SizedBox(height: 20),
                     _SidebarTile(
-                      icon: Icons.settings_outlined,
+                      icon: Icons.settings,
                       label: 'Settings',
                       selected: _selected is _Settings,
                       onTap: () =>
@@ -194,7 +197,11 @@ class _SidebarShellState extends State<_SidebarShell> {
               ),
             ),
           ),
-          const VerticalDivider(width: 1),
+          VerticalDivider(
+            width: 0.5,
+            thickness: 0.5,
+            color: PlinkPalette.of(context).separator,
+          ),
           Expanded(child: content),
         ],
       ),
@@ -221,19 +228,30 @@ class _SidebarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // iPad sidebar: amber icons, and a solid amber row with white
+    // text and icon when selected.
+    final p = PlinkPalette.of(context);
     final tile = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       child: ListTile(
         dense: true,
-        leading: Icon(icon, color: color, size: 20),
+        visualDensity: VisualDensity.compact,
+        leading: Icon(
+          icon,
+          color: selected ? Colors.white : plinkAccent,
+          size: 20,
+        ),
         title: Text(
           label,
-          style: TextStyle(color: color),
+          style: TextStyle(
+            fontSize: 15,
+            color: selected ? Colors.white : (color ?? p.label),
+          ),
           overflow: TextOverflow.ellipsis,
         ),
         selected: selected,
-        selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        selectedTileColor: plinkAccent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         onTap: onTap,
       ),
     );

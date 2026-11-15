@@ -6,6 +6,7 @@ import '../../constants.dart';
 import '../../data/library_store.dart';
 import '../../models/board.dart';
 import '../../models/pin.dart';
+import '../../theme.dart';
 import '../boards/board_picker_dialog.dart';
 import '../settings/sync_page.dart';
 import '../widgets/common.dart';
@@ -61,133 +62,161 @@ class _PinGridPageState extends State<PinGridPage> {
     final board = widget.board;
     final pins = _filtered(store);
     final canReorder = board != null && _query.isEmpty && pins.length > 1;
+    final p = PlinkPalette.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(board?.name ?? 'All Pins'),
-        actions: [
-          if (canReorder)
-            IconButton(
-              tooltip: _reordering ? 'Done' : 'Reorder',
-              icon: Icon(_reordering ? Icons.check : Icons.swap_vert),
-              onPressed: () => setState(() => _reordering = !_reordering),
-            ),
-          if (board == null) const SyncButton(),
-          IconButton(
-            tooltip: 'Add Pin',
-            icon: const Icon(Icons.add),
-            onPressed: _addPin,
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SearchBar(
-              controller: _searchController,
-              hintText: 'Search pins',
-              leading: const Icon(Icons.search),
-              elevation: const WidgetStatePropertyAll(0),
-              trailing: [
-                if (_query.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() {
-                      _searchController.clear();
-                      _query = '';
-                    }),
+    return LargeTitlePage(
+      title: board?.name ?? 'All Pins',
+      actions: [
+        if (canReorder)
+          _reordering
+              ? TextButton(
+                  onPressed: () => setState(() => _reordering = false),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-              ],
-              onChanged: (v) => setState(() {
-                _query = v.trim();
-                _reordering = false;
-              }),
-            ),
-          ),
+                )
+              : IconButton(
+                  tooltip: 'Reorder',
+                  icon: const Icon(Icons.swap_vert),
+                  onPressed: () => setState(() => _reordering = true),
+                ),
+        if (board == null) const SyncButton(),
+        IconButton(
+          tooltip: 'Add Pin',
+          icon: const Icon(Icons.add),
+          onPressed: _addPin,
+        ),
+      ],
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: SearchBar(
+          controller: _searchController,
+          hintText: 'Search pins',
+          leading: Icon(Icons.search, color: p.secondaryLabel),
+          trailing: [
+            if (_query.isNotEmpty)
+              IconButton(
+                icon: Icon(Icons.cancel, color: p.secondaryLabel, size: 18),
+                onPressed: () => setState(() {
+                  _searchController.clear();
+                  _query = '';
+                }),
+              ),
+          ],
+          onChanged: (v) => setState(() {
+            _query = v.trim();
+            _reordering = false;
+          }),
         ),
       ),
-      body: _body(store, pins),
+      slivers: _body(store, pins),
     );
   }
 
-  Widget _body(LibraryStore store, List<Pin> pins) {
+  List<Widget> _body(LibraryStore store, List<Pin> pins) {
     if (pins.isEmpty) {
+      final Widget empty;
       if (_query.isNotEmpty) {
-        return EmptyState(
+        empty = EmptyState(
           icon: Icons.search,
           title: 'No Results',
           subtitle: 'No pins match "$_query".',
         );
+      } else if (widget.board == null) {
+        empty = EmptyState(
+          icon: Icons.push_pin,
+          title: 'No Pins Yet',
+          subtitle: 'Save links from the web to see them here.',
+          actionTitle: 'Add a Link',
+          onAction: _addPin,
+        );
+      } else {
+        empty = EmptyState(
+          icon: Icons.push_pin,
+          title: 'No Pins',
+          subtitle: 'This board is empty.',
+          actionTitle: 'Add a Link',
+          onAction: _addPin,
+        );
       }
-      return widget.board == null
-          ? EmptyState(
-              icon: Icons.push_pin_outlined,
-              title: 'No Pins Yet',
-              subtitle: 'Save links from the web to see them here.',
-              actionTitle: 'Add a Link',
-              onAction: _addPin,
-            )
-          : EmptyState(
-              icon: Icons.push_pin_outlined,
-              title: 'No Pins',
-              subtitle: 'This board is empty.',
-              actionTitle: 'Add a Link',
-              onAction: _addPin,
-            );
+      return [SliverFillRemaining(hasScrollBody: false, child: empty)];
     }
 
     if (_reordering && widget.board != null) {
-      return ReorderableListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: pins.length,
-        onReorderItem: (from, to) =>
-            store.reorderInBoard(widget.board!, from, to),
-        itemBuilder: (context, i) {
-          final pin = pins[i];
-          return ListTile(
-            key: ValueKey(pin.id),
-            leading: SizedBox.square(
-              dimension: 44,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: pin.imagePath != null
-                    ? StoredImage(pin.imagePath!)
-                    : const ColoredBox(color: Colors.black12),
+      final p = PlinkPalette.of(context);
+      return [
+        SliverReorderableList(
+          itemCount: pins.length,
+          onReorderItem: (from, to) =>
+              store.reorderInBoard(widget.board!, from, to),
+          itemBuilder: (context, i) {
+            final pin = pins[i];
+            return Material(
+              key: ValueKey(pin.id),
+              color: p.background,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: SizedBox.square(
+                  dimension: 44,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: pin.imagePath != null
+                        ? StoredImage(pin.imagePath!)
+                        : ColoredBox(color: p.fill),
+                  ),
+                ),
+                title: Text(
+                  pin.title.isEmpty ? pin.urlString : pin.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                subtitle: Text(
+                  pin.domain,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                trailing: ReorderableDragStartListener(
+                  index: i,
+                  child: Icon(Icons.drag_handle, color: p.tertiaryLabel),
+                ),
               ),
-            ),
-            title: Text(
-              pin.title.isEmpty ? pin.urlString : pin.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(pin.domain),
-          );
-        },
-      );
+            );
+          },
+        ),
+      ];
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) => MasonryGridView.count(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        crossAxisCount: AppConstants.columnsForWidth(constraints.maxWidth),
-        mainAxisSpacing: AppConstants.cardSpacing,
-        crossAxisSpacing: AppConstants.cardSpacing,
-        itemCount: pins.length,
-        itemBuilder: (context, i) {
-          final pin = pins[i];
-          return ContextMenuRegion(
-            key: ValueKey(pin.id),
-            itemsBuilder: (menuContext) => pinMenuItems(menuContext, pin),
-            child: PinCard(
-              pin: pin,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => PinDetailPage(pinId: pin.id)),
-              ),
+    return [
+      SliverLayoutBuilder(
+        builder: (context, constraints) => SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          sliver: SliverMasonryGrid.count(
+            crossAxisCount: AppConstants.columnsForWidth(
+              constraints.crossAxisExtent,
             ),
-          );
-        },
+            mainAxisSpacing: AppConstants.cardSpacing,
+            crossAxisSpacing: AppConstants.cardSpacing,
+            childCount: pins.length,
+            itemBuilder: (context, i) {
+              final pin = pins[i];
+              return ContextMenuRegion(
+                key: ValueKey(pin.id),
+                itemsBuilder: (menuContext) => pinMenuItems(menuContext, pin),
+                child: PinCard(
+                  pin: pin,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PinDetailPage(pinId: pin.id),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
-    );
+    ];
   }
 }
 
@@ -202,11 +231,16 @@ List<PopupMenuEntry<void>> pinMenuItems(BuildContext context, Pin pin) {
     Color? color,
   }) => PopupMenuItem(
     onTap: onTap,
-    child: ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: color),
-      title: Text(label, style: TextStyle(color: color)),
+    height: 44,
+    // iOS menu row: label first, icon at the trailing edge.
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(label, style: TextStyle(color: color)),
+        ),
+        const SizedBox(width: 24),
+        Icon(icon, size: 20, color: color ?? PlinkPalette.of(context).label),
+      ],
     ),
   );
 

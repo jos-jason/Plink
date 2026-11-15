@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/library_store.dart';
 import '../../sync/plink_sync.dart';
+import '../../theme.dart';
 import '../widgets/common.dart';
 import 'sync_page.dart';
 
@@ -99,73 +100,76 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<LibraryStore>();
-    final theme = Theme.of(context);
+    final sync = context.watch<PlinkSync>();
+    final p = PlinkPalette.of(context);
 
-    Widget header(String text) => Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
-      child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
-      ),
-    );
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: ListView(
-            children: [
-              header('Library'),
-              ListTile(
-                title: const Text('Pins'),
-                trailing: Text('${store.pins.length}'),
+    return LargeTitlePage(
+      title: 'Settings',
+      background: p.groupedBackground,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  GroupedSection(
+                    header: 'Library',
+                    children: [
+                      GroupedRow(title: 'Pins', value: '${store.pins.length}'),
+                      GroupedRow(
+                        title: 'Boards',
+                        value: '${store.boards.length}',
+                      ),
+                    ],
+                  ),
+                  GroupedSection(
+                    header: 'Sync',
+                    children: [
+                      GroupedRow(
+                        icon: Icons.cloud_sync,
+                        title: 'Sync with your server',
+                        value: sync.signedIn ? 'On' : 'Off',
+                        subtitle: sync.signedIn ? sync.email : null,
+                        chevron: true,
+                        onTap: () => openSyncPage(context),
+                      ),
+                    ],
+                  ),
+                  GroupedSection(
+                    header: 'Backup',
+                    footer:
+                        'Backups work with Plink for iOS and Mac. Images are '
+                        'fetched again from each link after an import.',
+                    children: [
+                      GroupedRow(
+                        icon: Icons.ios_share,
+                        title: 'Export Library',
+                        isButton: true,
+                        onTap: () => _export(context),
+                      ),
+                      GroupedRow(
+                        icon: Icons.download,
+                        title: 'Import Library',
+                        isButton: true,
+                        onTap: () => _import(context),
+                      ),
+                    ],
+                  ),
+                  const GroupedSection(
+                    header: 'About',
+                    children: [
+                      GroupedRow(title: 'Version', value: '1.0.0'),
+                      GroupedRow(title: 'App', value: 'Plink'),
+                    ],
+                  ),
+                ],
               ),
-              ListTile(
-                title: const Text('Boards'),
-                trailing: Text('${store.boards.length}'),
-              ),
-              header('Sync'),
-              Builder(
-                builder: (context) {
-                  final sync = context.watch<PlinkSync>();
-                  return ListTile(
-                    leading: const Icon(Icons.cloud_sync_outlined),
-                    title: const Text('Sync with your server'),
-                    subtitle: Text(
-                      sync.signedIn ? 'Signed in as ${sync.email}' : 'Off',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => openSyncPage(context),
-                  );
-                },
-              ),
-              header('Backup'),
-              ListTile(
-                leading: const Icon(Icons.upload_outlined),
-                title: const Text('Export Library'),
-                subtitle: const Text(
-                  'Saves a JSON backup compatible with Plink for iOS and Mac',
-                ),
-                onTap: () => _export(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.download_outlined),
-                title: const Text('Import Library'),
-                subtitle: const Text(
-                  'Images are re-fetched from each link after import',
-                ),
-                onTap: () => _import(context),
-              ),
-              header('About'),
-              const ListTile(title: Text('App'), trailing: Text('Plink')),
-              const ListTile(title: Text('Version'), trailing: Text('1.0.0')),
-            ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
