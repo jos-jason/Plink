@@ -335,6 +335,22 @@ class LibraryStore extends ChangeNotifier {
 
   // MARK: Persistence
 
+  /// Bumped when an upgrade step is added to [_upgradeFrom].
+  static const _fileVersion = 2;
+
+  void _upgradeFrom(int version) {
+    if (version < 2) {
+      // Version 1 only looked for og:image, so pages without one (Amazon,
+      // many shops) got just their logo. Fetch those pins again.
+      for (final pin in _pins) {
+        if (pin.imagePath == null && !pin.isCustomImage) {
+          pin.metadataFetched = false;
+        }
+      }
+    }
+    _saveTimer = Timer(Duration.zero, save);
+  }
+
   Future<void> _load() async {
     if (!await _file.exists()) return;
     try {
@@ -342,6 +358,9 @@ class LibraryStore extends ChangeNotifier {
           jsonDecode(await _file.readAsString()) as Map<String, dynamic>;
       _boards.addAll((json['boards'] as List).map((b) => Board.fromJson(b)));
       _pins.addAll((json['pins'] as List).map((p) => Pin.fromJson(p)));
+      if ((json['version'] as int? ?? 1) < _fileVersion) {
+        _upgradeFrom(json['version'] as int? ?? 1);
+      }
     } catch (e) {
       // Keep the unreadable file rather than overwriting it on next save.
       final backup =
@@ -361,7 +380,7 @@ class LibraryStore extends ChangeNotifier {
   Future<void> save() async {
     _saveTimer?.cancel();
     final json = jsonEncode({
-      'version': 1,
+      'version': _fileVersion,
       'boards': _boards.map((b) => b.toJson()).toList(),
       'pins': _pins.map((p) => p.toJson()).toList(),
     });

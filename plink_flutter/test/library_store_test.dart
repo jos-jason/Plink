@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -68,5 +69,42 @@ void main() {
       'https://a.com',
       'https://b.com',
     ]);
+  });
+
+  test('opening a version 1 library re-fetches logo-only pins once', () async {
+    File('${dir.path}/library.json').writeAsStringSync(
+      jsonEncode({
+        'version': 1,
+        'boards': [],
+        'pins': [
+          Pin(
+            urlString: 'https://amazon.com/dp/1',
+            metadataFetched: true,
+          ).toJson()..['faviconPath'] = 'x-favicon.png',
+          Pin(
+            urlString: 'https://a.com',
+            imagePath: 'a.jpg',
+            metadataFetched: true,
+          ).toJson(),
+          Pin(
+            urlString: 'https://b.com',
+            isCustomImage: true,
+            metadataFetched: true,
+          ).toJson(),
+        ],
+      }),
+    );
+    final store = await LibraryStore.open(dir.path);
+    final byUrl = {for (final p in store.pins) p.urlString: p.metadataFetched};
+    expect(byUrl, {
+      'https://amazon.com/dp/1': false,
+      'https://a.com': true,
+      'https://b.com': true,
+    });
+    await store.save();
+    final saved = jsonDecode(
+      File('${dir.path}/library.json').readAsStringSync(),
+    );
+    expect(saved['version'], 2);
   });
 }

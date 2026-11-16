@@ -160,7 +160,7 @@ class SettingsPage extends StatelessWidget {
                   const GroupedSection(
                     header: 'About',
                     children: [
-                      GroupedRow(title: 'Version', value: '1.0.0'),
+                      GroupedRow(title: 'Version', value: '1.1.1'),
                       GroupedRow(title: 'App', value: 'Plink'),
                     ],
                   ),

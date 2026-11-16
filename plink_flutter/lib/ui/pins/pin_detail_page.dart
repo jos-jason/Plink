@@ -10,6 +10,7 @@ import '../../models/pin.dart';
 import '../boards/board_picker_dialog.dart';
 import '../widgets/common.dart';
 import '../widgets/board_glyph.dart';
+import 'page_image_picker.dart';
 
 class PinDetailPage extends StatefulWidget {
   const PinDetailPage({super.key, required this.pinId});
@@ -113,8 +114,12 @@ class _PinDetailPageState extends State<PinDetailPage> {
               icon: const Icon(Icons.more_horiz),
               itemBuilder: (_) => [
                 PopupMenuItem(
+                  onTap: () => showPageImagePicker(context, pin),
+                  child: const Text('Choose Image from Page'),
+                ),
+                PopupMenuItem(
                   onTap: () => _changeImage(pin),
-                  child: const Text('Change Image'),
+                  child: const Text('Choose from Photos'),
                 ),
                 PopupMenuItem(
                   onTap: () => store.refreshMetadata(pin),
@@ -169,6 +174,14 @@ class _PinDetailPageState extends State<PinDetailPage> {
                       dimension: 64,
                       child: StoredImage(pin.faviconPath!, fit: BoxFit.contain),
                     ),
+                  ),
+                ),
+              if (pin.imagePath == null)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => showPageImagePicker(context, pin),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Choose an image from the page'),
                   ),
                 ),
               const SizedBox(height: 16),

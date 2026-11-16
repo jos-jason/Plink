@@ -10,6 +10,7 @@ import '../../models/board.dart';
 import '../../models/pin.dart';
 import '../../services/metadata_service.dart';
 import '../widgets/board_glyph.dart';
+import '../widgets/page_image_option.dart';
 
 class AddPinSheet extends StatefulWidget {
   const AddPinSheet({super.key, this.board});
@@ -233,7 +234,7 @@ class _AddPinSheetState extends State<AddPinSheet> {
                 scrollDirection: Axis.horizontal,
                 itemCount: meta.availableImageUrls.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
-                itemBuilder: (context, i) => _ImageOption(
+                itemBuilder: (context, i) => PageImageOption(
                   url: meta.availableImageUrls[i],
                   selected: _selectedImage == i,
                   onTap: () => setState(
@@ -260,68 +261,6 @@ class _AddPinSheetState extends State<AddPinSheet> {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _ImageOption extends StatelessWidget {
-  const _ImageOption({
-    required this.url,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final Uri url;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 100,
-        height: 100,
-        margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected ? color : Colors.transparent,
-            width: 3,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(5),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.network(
-                url.toString(),
-                fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) => progress == null
-                    ? child
-                    : const Center(
-                        child: SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: Colors.black12,
-                  child: Icon(Icons.warning_amber_outlined),
-                ),
-              ),
-              if (selected)
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Icon(Icons.check_circle, color: color),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
